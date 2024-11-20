@@ -5,8 +5,6 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 
 ## **TalentChain End-to-End Flow**
 
----
-
 ### **1. User Registration and Profile Creation**
 
 **User Actions:**
@@ -360,8 +358,6 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 ---
 
 ## **Tech Stack Overview**
-
----
 
 ### **1. Smart Contract Development**
 
