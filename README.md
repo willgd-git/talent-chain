@@ -3,11 +3,11 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 
 ---
 
-### **TalentChain End-to-End Flow**
+## **TalentChain End-to-End Flow**
 
 ---
 
-#### **1. User Registration and Profile Creation**
+### **1. User Registration and Profile Creation**
 
 **User Actions:**
 
@@ -45,9 +45,7 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 - **Off-Chain Data:** Actual profile data and media stored on IPFS.
 - **Event Data:** Indexed by The Graph for retrieval.
 
----
-
-#### **2. Service Listing**
+### **2. Service Listing**
 
 **User Actions:**
 
@@ -83,9 +81,7 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 - **Off-Chain Data:** Service descriptions and media on IPFS.
 - **Event Data:** Indexed by The Graph.
 
----
-
-#### **3. Browsing and Selecting Services**
+### **3. Browsing and Selecting Services**
 
 **User Actions:**
 
@@ -105,9 +101,7 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 
 - **Data Retrieval:** On-chain data via The Graph; off-chain data from IPFS.
 
----
-
-#### **4. Initiating a Service Agreement**
+### **4. Initiating a Service Agreement**
 
 **User Actions:**
 
@@ -140,9 +134,7 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 - **On-Chain Data:** Agreement ID, service ID, client and provider addresses, agreement status.
 - **Event Data:** Indexed by The Graph.
 
----
-
-#### **5. Payment and Escrow**
+### **5. Payment and Escrow**
 
 **User Actions:**
 
@@ -175,9 +167,7 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 - **On-Chain Data:** Escrow balance, updated agreement status.
 - **Event Data:** Indexed by The Graph.
 
----
-
-#### **6. Service Acceptance by Provider**
+### **6. Service Acceptance by Provider**
 
 **User Actions:**
 
@@ -207,9 +197,7 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 - **On-Chain Data:** Updated agreement status.
 - **Event Data:** Indexed by The Graph.
 
----
-
-#### **7. Service Delivery**
+### **7. Service Delivery**
 
 **User Actions:**
 
@@ -240,9 +228,7 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 - **Off-Chain Data:** Deliverables stored on IPFS.
 - **Event Data:** Indexed by The Graph if recorded on-chain.
 
----
-
-#### **8. Completion and Fund Release**
+### **8. Completion and Fund Release**
 
 **User Actions:**
 
@@ -273,9 +259,7 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 - **On-Chain Data:** Updated agreement status, fund transfer.
 - **Event Data:** Indexed by The Graph.
 
----
-
-#### **9. Submitting Feedback and Reputation Update**
+### **9. Submitting Feedback and Reputation Update**
 
 **User Actions:**
 
@@ -307,9 +291,7 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 - **Off-Chain Data:** Comments stored on IPFS.
 - **Event Data:** Indexed by The Graph.
 
----
-
-#### **10. Dispute Resolution**
+### **10. Dispute Resolution**
 
 **User Actions:**
 
@@ -347,9 +329,7 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 - **Off-Chain Data:** Evidence stored on IPFS.
 - **Event Data:** Indexed by The Graph.
 
----
-
-#### **11. Data Retrieval and Display**
+### **11. Data Retrieval and Display**
 
 **Front-End Application:**
 
@@ -380,6 +360,8 @@ TalentChain is a decentralized skill exchange platform that enables users to tra
 ---
 
 ## **Tech Stack Overview**
+
+---
 
 ### **1. Smart Contract Development**
 
