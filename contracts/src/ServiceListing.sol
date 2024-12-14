@@ -2,12 +2,13 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IUserRegistry.sol";
+import "./interfaces/IServiceListing.sol";
 
 /// @title Service Listing Contract for TalentChain
 /// @author
 /// @notice Allows service providers to list services with basic info (price, active status).
 /// @dev Integrates with UserRegistry to ensure that only registered providers can create or modify services.
-contract ServiceListing {
+contract ServiceListing is IServiceListing {
     /// @notice Structure holding service info
     struct Service {
         uint256 serviceId;
@@ -24,6 +25,13 @@ contract ServiceListing {
 
     /// @notice Address of the UserRegistry contract
     IUserRegistry public userRegistry;
+    
+    /// @notice Owner address for administrative functions like setting userRegistry
+    address public owner;
+
+    /// @notice Emitted when UserRegistry contract has been set
+    /// @param userRegistryAddr The address of UserRegistry contract
+    event UserRegistryAddressSet(address userRegistryAddr);
 
     /// @notice Emitted when a new service is created
     /// @param serviceId The ID of the created service
@@ -44,11 +52,24 @@ contract ServiceListing {
     /// @param serviceId The ID of the service reactivated
     event ServiceReactivated(uint256 indexed serviceId);
 
-    /// @notice Constructor sets the UserRegistry contract address
+    /// @notice Constructor sets the owner
+    constructor() {
+        owner = msg.sender;
+    }
+
+    /// @notice Sets the UserRegistry contract after deployment
     /// @param userRegistryAddr The address of the UserRegistry contract
-    constructor(address userRegistryAddr) {
+    function setUserRegistry(address userRegistryAddr) external onlyOwner {
         require(userRegistryAddr != address(0), "Invalid UserRegistry address");
         userRegistry = IUserRegistry(userRegistryAddr);
+
+        emit UserRegistryAddressSet(userRegistryAddr);
+    }
+
+    /// @notice Modifier to ensure the caller is the contract owner
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
     }
 
     /// @notice Modifier to ensure the caller is registered as a provider
