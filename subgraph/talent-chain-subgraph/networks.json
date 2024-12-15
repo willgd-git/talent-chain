@@ -3,6 +3,21 @@
     "UserRegistry": {
       "address": "0xDE7CaA7393E596880f9c6eb85A36f773254edc4A",
       "startBlock": 1
+    },
+    "ServiceListing": {
+      "address": "0xF9D993f27cd2AC55A9D3Aa59407623d2688Fd0B6"
+    },
+    "PaymentManager": {
+      "address": "0xaF6F9d320f61Bc30A1f65EF67d7376EA8CC2a4C2"
+    },
+    "ServiceAgreement": {
+      "address": "0x0061503DCb9a2eEb4bD56125C6807130Eb215c1a"
+    },
+    "DisputeResolution": {
+      "address": "0x734bd24CcB6a950A2957018d23c255aCB6f457FD"
+    },
+    "ReputationManager": {
+      "address": "0x784b92cD838Fa473dC27Ec1437F6072305C4B5Cc"
     }
   }
 }

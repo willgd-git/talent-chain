@@ -5,3 +5,218 @@ type UserRegistered @entity(immutable: true) {
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
+type ServiceCreated @entity(immutable: true) {
+  id: Bytes!
+  serviceId: BigInt! # uint256
+  provider: Bytes! # address
+  price: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type ServiceDeactivated @entity(immutable: true) {
+  id: Bytes!
+  serviceId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type ServiceReactivated @entity(immutable: true) {
+  id: Bytes!
+  serviceId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type ServiceUpdated @entity(immutable: true) {
+  id: Bytes!
+  serviceId: BigInt! # uint256
+  newPrice: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type UserRegistrySet @entity(immutable: true) {
+  id: Bytes!
+  userRegistryAddr: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+type FundsDeposited @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  amount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type FundsDistributedAfterDispute @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  clientAmount: BigInt! # uint256
+  providerAmount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type FundsRefunded @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  amount: BigInt! # uint256
+  to: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type FundsReleased @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  amount: BigInt! # uint256
+  to: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type ServiceAgreementAddressSet @entity(immutable: true) {
+  id: Bytes!
+  newServiceAgreement: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+type AgreementAcceptedByProvider @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type AgreementAmountUpdated @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  oldAmount: BigInt! # uint256
+  newAmount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type AgreementCancelled @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type AgreementCompleted @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type AgreementCompletedAccepted @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type AgreementCreated @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  serviceId: BigInt! # uint256
+  client: Bytes! # address
+  provider: Bytes! # address
+  amount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type AgreementDisputeResolved @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  ruling: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type AgreementDisputed @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type AgreementPaid @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PaymentManagerAddressSet @entity(immutable: true) {
+  id: Bytes!
+  newPaymentManager: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type ServiceListingAddressSet @entity(immutable: true) {
+  id: Bytes!
+  newServiceListing: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+type ArbitratorSet @entity(immutable: true) {
+  id: Bytes!
+  newArbitrator: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type DisputeResolutionServiceAgreementAddressSet @entity(immutable: true) {
+  id: Bytes!
+  newServiceAgreement: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+type FeedbackSubmitted @entity(immutable: true) {
+  id: Bytes!
+  agreementId: BigInt! # uint256
+  reviewer: Bytes! # address
+  reviewee: Bytes! # address
+  rating: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type ReputationManagerServiceAgreementAddressSet @entity(immutable: true) {
+  id: Bytes!
+  newServiceAgreement: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

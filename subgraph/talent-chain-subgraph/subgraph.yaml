@@ -24,3 +24,163 @@ dataSources:
         - event: UserRegistered(indexed address)
           handler: handleUserRegistered
       file: ./src/user-registry.ts
+  - kind: ethereum
+    name: ServiceListing
+    network: sepolia
+    source:
+      address: "0xF9D993f27cd2AC55A9D3Aa59407623d2688Fd0B6"
+      abi: ServiceListing
+      startBlock: 7283898
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ServiceCreated
+        - ServiceDeactivated
+        - ServiceReactivated
+        - ServiceUpdated
+        - UserRegistrySet
+      abis:
+        - name: ServiceListing
+          file: ./abis/ServiceListing.json
+      eventHandlers:
+        - event: ServiceCreated(indexed uint256,indexed address,uint256)
+          handler: handleServiceCreated
+        - event: ServiceDeactivated(indexed uint256)
+          handler: handleServiceDeactivated
+        - event: ServiceReactivated(indexed uint256)
+          handler: handleServiceReactivated
+        - event: ServiceUpdated(indexed uint256,uint256)
+          handler: handleServiceUpdated
+        - event: UserRegistrySet(address)
+          handler: handleUserRegistrySet
+      file: ./src/service-listing.ts
+  - kind: ethereum
+    name: PaymentManager
+    network: sepolia
+    source:
+      address: "0xaF6F9d320f61Bc30A1f65EF67d7376EA8CC2a4C2"
+      abi: PaymentManager
+      startBlock: 7283898
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - FundsDeposited
+        - FundsDistributedAfterDispute
+        - FundsRefunded
+        - FundsReleased
+        - ServiceAgreementAddressSet
+      abis:
+        - name: PaymentManager
+          file: ./abis/PaymentManager.json
+      eventHandlers:
+        - event: FundsDeposited(indexed uint256,uint256)
+          handler: handleFundsDeposited
+        - event: FundsDistributedAfterDispute(indexed uint256,uint256,uint256)
+          handler: handleFundsDistributedAfterDispute
+        - event: FundsRefunded(indexed uint256,uint256,indexed address)
+          handler: handleFundsRefunded
+        - event: FundsReleased(indexed uint256,uint256,indexed address)
+          handler: handleFundsReleased
+        - event: ServiceAgreementAddressSet(indexed address)
+          handler: handleServiceAgreementAddressSet
+      file: ./src/payment-manager.ts
+  - kind: ethereum
+    name: ServiceAgreement
+    network: sepolia
+    source:
+      address: "0x0061503DCb9a2eEb4bD56125C6807130Eb215c1a"
+      abi: ServiceAgreement
+      startBlock: 7283898
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - AgreementAcceptedByProvider
+        - AgreementAmountUpdated
+        - AgreementCancelled
+        - AgreementCompleted
+        - AgreementCompletedAccepted
+        - AgreementCreated
+        - AgreementDisputeResolved
+        - AgreementDisputed
+        - AgreementPaid
+        - PaymentManagerAddressSet
+        - ServiceListingAddressSet
+      abis:
+        - name: ServiceAgreement
+          file: ./abis/ServiceAgreement.json
+      eventHandlers:
+        - event: AgreementAcceptedByProvider(indexed uint256)
+          handler: handleAgreementAcceptedByProvider
+        - event: AgreementAmountUpdated(indexed uint256,uint256,uint256)
+          handler: handleAgreementAmountUpdated
+        - event: AgreementCancelled(indexed uint256)
+          handler: handleAgreementCancelled
+        - event: AgreementCompleted(indexed uint256)
+          handler: handleAgreementCompleted
+        - event: AgreementCompletedAccepted(indexed uint256)
+          handler: handleAgreementCompletedAccepted
+        - event: AgreementCreated(indexed uint256,indexed uint256,indexed address,address,uint256)
+          handler: handleAgreementCreated
+        - event: AgreementDisputeResolved(indexed uint256,uint8)
+          handler: handleAgreementDisputeResolved
+        - event: AgreementDisputed(indexed uint256)
+          handler: handleAgreementDisputed
+        - event: AgreementPaid(indexed uint256)
+          handler: handleAgreementPaid
+        - event: PaymentManagerAddressSet(indexed address)
+          handler: handlePaymentManagerAddressSet
+        - event: ServiceListingAddressSet(indexed address)
+          handler: handleServiceListingAddressSet
+      file: ./src/service-agreement.ts
+  - kind: ethereum
+    name: DisputeResolution
+    network: sepolia
+    source:
+      address: "0x734bd24CcB6a950A2957018d23c255aCB6f457FD"
+      abi: DisputeResolution
+      startBlock: 7283898
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ArbitratorSet
+        - DisputeResolutionServiceAgreementAddressSet
+      abis:
+        - name: DisputeResolution
+          file: ./abis/DisputeResolution.json
+      eventHandlers:
+        - event: ArbitratorSet(indexed address)
+          handler: handleArbitratorSet
+        - event: ServiceAgreementAddressSet(indexed address)
+          handler: handleServiceAgreementAddressSet
+      file: ./src/dispute-resolution.ts
+  - kind: ethereum
+    name: ReputationManager
+    network: sepolia
+    source:
+      address: "0x784b92cD838Fa473dC27Ec1437F6072305C4B5Cc"
+      abi: ReputationManager
+      startBlock: 7283898
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - FeedbackSubmitted
+        - ReputationManagerServiceAgreementAddressSet
+      abis:
+        - name: ReputationManager
+          file: ./abis/ReputationManager.json
+      eventHandlers:
+        - event: FeedbackSubmitted(indexed uint256,indexed address,indexed address,uint8)
+          handler: handleFeedbackSubmitted
+        - event: ServiceAgreementAddressSet(indexed address)
+          handler: handleServiceAgreementAddressSet
+      file: ./src/reputation-manager.ts
