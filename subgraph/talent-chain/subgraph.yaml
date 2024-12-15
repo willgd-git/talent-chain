@@ -1,0 +1,26 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: UserRegistry
+    network: sepolia
+    source:
+      address: "0xDE7CaA7393E596880f9c6eb85A36f773254edc4A"
+      abi: UserRegistry
+      startBlock: 100
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - UserRegistered
+      abis:
+        - name: UserRegistry
+          file: ./abis/UserRegistry.json
+      eventHandlers:
+        - event: UserRegistered(indexed address)
+          handler: handleUserRegistered
+      file: ./src/user-registry.ts
