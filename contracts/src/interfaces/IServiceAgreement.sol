@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./IPaymentManager.sol";
+
 /// @title IServiceAgreement Interface
-/// @notice Interface for reading agreement data from ServiceAgreement contract
+/// @notice Interface for reading and interacting with agreement data from the ServiceAgreement contract
 interface IServiceAgreement {
     /// @notice Enumeration of possible agreement statuses
     enum AgreementStatus {
@@ -37,7 +39,20 @@ interface IServiceAgreement {
     );
 
     /// @notice Marks the agreement as Paid.
-    /// @dev Can only be called by the PaymentManager contract.
+    /// @dev Called by the PaymentManager contract after depositing exact amount.
     /// @param agreementId The ID of the agreement.
     function markAsPaid(uint256 agreementId) external;
+
+    /// @notice Disputes the completed agreement.
+    /// @dev Called by a participant (client or provider) if agreement is Completed.
+    ///      Changes the state from Completed -> Disputed.
+    /// @param agreementId The ID of the agreement.
+    function disputeCompletedAgreement(uint256 agreementId) external;
+
+    /// @notice Resolves the dispute by providing a final ruling.
+    /// @dev Called by DisputeResolution contract or arbitrator to finalize the dispute.
+    ///      Changes state from Disputed -> DisputeResolved and triggers distribution.
+    /// @param agreementId The ID of the agreement.
+    /// @param ruling The final ruling (ClientFavored, ProviderFavored, or Split).
+    function resolveDispute(uint256 agreementId, IPaymentManager.Ruling ruling) external;
 }

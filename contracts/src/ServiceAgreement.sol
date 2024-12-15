@@ -247,10 +247,9 @@ contract ServiceAgreement is IServiceAgreement {
     /// @notice Client disputes the completed agreement
     /// @dev Must be Completed before Disputed
     /// @param agreementId The ID of the agreement
-    function disputeCompletedAgreement(uint256 agreementId) external {
+    function disputeCompletedAgreement(uint256 agreementId) external onlyDisputeResolution {
         Agreement storage a = agreements[agreementId];
         require(a.agreementId == agreementId, "Agreement not found");
-        require(a.client == msg.sender, "Only client can dispute");
         require(a.status == AgreementStatus.Completed, "Must be Completed before dispute");
 
         a.status = AgreementStatus.Disputed;

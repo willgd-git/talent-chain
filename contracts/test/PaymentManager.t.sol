@@ -6,14 +6,14 @@ import {UserRegistry} from "../src/UserRegistry.sol";
 import {ServiceListing} from "../src/ServiceListing.sol";
 import {ServiceAgreement} from "../src/ServiceAgreement.sol";
 import {PaymentManager} from "../src/PaymentManager.sol";
+import {DisputeResolution} from "../src/DisputeResolution.sol";
 import {IServiceAgreement} from "../src/interfaces/IServiceAgreement.sol";
 import {IPaymentManager} from "../src/interfaces/IPaymentManager.sol";
 import {IUserRegistry} from "../src/interfaces/IUserRegistry.sol";
 import {IServiceListing} from "../src/interfaces/IServiceListing.sol";
 
 /// @title PaymentManagerBaseTest
-/// @notice Base test contract setting up environment for PaymentManager tests.
-/// @dev The test contract itself is the owner of all deployed contracts.
+/// @notice Base test contract setting up environment for PaymentManager tests, following the style of UserRegistry tests.
 abstract contract PaymentManagerBaseTest is Test {
     event FundsDeposited(uint256 indexed agreementId, uint256 amount);
     event FundsReleased(uint256 indexed agreementId, uint256 amount, address indexed to);
@@ -24,11 +24,13 @@ abstract contract PaymentManagerBaseTest is Test {
     ServiceListing public serviceListing;
     ServiceAgreement public serviceAgreement;
     PaymentManager public paymentManager;
+    DisputeResolution public disputeResolution;
 
+    address owner = address(this);
     address provider1 = address(2);
     address client1 = address(3);
     address nonParticipant = address(4);
-    address disputeResolution = address(5);
+    address arbitrator = address(5);
 
     uint256 serviceId;
 
@@ -51,6 +53,9 @@ abstract contract PaymentManagerBaseTest is Test {
 
         vm.prank(provider1);
         serviceId = serviceListing.createService(100); // 100 wei
+
+        // Deploy DisputeResolution
+        disputeResolution = new DisputeResolution();
     }
 
     /// @notice Create an agreement (Proposed)
@@ -71,26 +76,16 @@ abstract contract PaymentManagerBaseTest is Test {
         serviceAgreement.completeAgreement(agreementId);
     }
 
-    /// @notice Dispute agreement (Completed -> Disputed)
-    function disputeAgreementHelper(address client, uint256 agreementId) internal {
+    /// @notice depositFunds is already tested in PaymentManagerDepositFundsTest, if needed we can add a helper here.
+    function depositFundsHelper(address client, uint256 agreementId, uint256 amount) internal {
+        vm.deal(client, amount);
         vm.prank(client);
-        serviceAgreement.disputeCompletedAgreement(agreementId);
-    }
-
-    /// @notice Resolve dispute scenario if needed
-    function resolveDisputeHelper(uint256 agreementId, IPaymentManager.Ruling ruling, uint256 clientAmount, uint256 providerAmount) internal {
-        vm.prank(address(this)); 
-        serviceAgreement.setDisputeResolutionAddress(disputeResolution);
-
-        vm.prank(disputeResolution);
-        vm.expectEmit(true, false, false, true);
-        emit FundsDistributedAfterDispute(agreementId, clientAmount, providerAmount);
-        serviceAgreement.resolveDispute(agreementId, ruling);
+        paymentManager.depositFunds{value:amount}(agreementId);
     }
 }
 
 /// @title PaymentManagerDepositFundsTest
-/// @notice Tests depositFunds function
+/// @notice Tests depositFunds function of PaymentManager
 contract PaymentManagerDepositFundsTest is PaymentManagerBaseTest {
     uint256 agreementId;
 
@@ -153,8 +148,7 @@ contract PaymentManagerReleaseFundsTest is PaymentManagerBaseTest {
         acceptAgreementHelper(provider1, agreementId);
     }
 
-    /// @notice Tests successful releaseFunds following the normal flow:
-    /// Deposit -> Paid, Complete -> Completed, AcceptCompleted -> CompletedAccepted, then releaseFunds.
+    /// @notice Tests successful releaseFunds following the normal flow
     function test_ReleaseFunds_Success() public {
         vm.deal(client1,100);
         vm.prank(client1);
@@ -202,33 +196,38 @@ contract PaymentManagerDistributeAfterDisputeTest is PaymentManagerBaseTest {
         super.setUp();
         agreementId = createAgreementHelper(client1, serviceId, provider1, 100);
         acceptAgreementHelper(provider1, agreementId);
-        vm.deal(client1,100);
-        vm.prank(client1);
-        paymentManager.depositFunds{value:100}(agreementId);
+        depositFundsHelper(client1, agreementId,100);
         completeAgreementHelper(provider1, agreementId);
-        disputeAgreementHelper(client1, agreementId);
+
+        // Now raise dispute via DisputeResolution, not directly
+        // First set DisputeResolution in ServiceAgreement and ServiceAgreement in DisputeResolution
+        vm.prank(owner);
+        serviceAgreement.setDisputeResolutionAddress(address(disputeResolution));
+        disputeResolution.setServiceAgreementAddress(address(serviceAgreement));
+
+        // raiseDispute requires participant and agreement Completed
+        // It's Completed, caller is client1 (participant)
+        vm.prank(client1);
+        disputeResolution.raiseDispute(agreementId);
+        // now Disputed
     }
 
     /// @notice Tests invalid ruling scenario
     function test_DistributeAfterDispute_RevertIf_InvalidRuling() public {
-        vm.prank(address(this));
-        serviceAgreement.setDisputeResolutionAddress(disputeResolution);
+        vm.prank(owner);
+        serviceAgreement.setDisputeResolutionAddress(address(disputeResolution));
 
-        vm.prank(disputeResolution);
+        vm.prank(address(disputeResolution));
         vm.expectRevert("Invalid ruling");
         serviceAgreement.resolveDispute(agreementId, IPaymentManager.Ruling.None);
     }
 
-    // No no-escrow test, no scenario needed
-    // No "not disputed state" test if that scenario is not relevant or always ensured by normal flow
-    // If you want it, it can remain.
-
     /// @notice Tests successful client favored distribution
     function test_DistributeAfterDispute_Success_ClientFavored() public {
-        vm.prank(address(this));
-        serviceAgreement.setDisputeResolutionAddress(disputeResolution);
+        vm.prank(owner);
+        serviceAgreement.setDisputeResolutionAddress(address(disputeResolution));
 
-        vm.prank(disputeResolution);
+        vm.prank(address(disputeResolution));
         vm.expectEmit(true, false, false, true);
         emit FundsDistributedAfterDispute(agreementId, 100, 0);
         serviceAgreement.resolveDispute(agreementId, IPaymentManager.Ruling.ClientFavored);
@@ -238,8 +237,9 @@ contract PaymentManagerDistributeAfterDisputeTest is PaymentManagerBaseTest {
     }
 }
 
+
 /// @title PaymentManagerSetServiceAgreementAddressTest
-/// @notice Tests setServiceAgreementAddress function
+/// @notice Tests setServiceAgreementAddress function of PaymentManager
 contract PaymentManagerSetServiceAgreementAddressTest is PaymentManagerBaseTest {
 
     /// @notice Tests setting ServiceAgreement address successfully

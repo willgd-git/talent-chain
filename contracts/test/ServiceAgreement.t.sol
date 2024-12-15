@@ -50,7 +50,7 @@ abstract contract ServiceAgreementBaseTest is Test {
     address provider1 = address(2);
     address client1 = address(3);
     address nonParticipant = address(4);
-    address arbitrator = address(5);
+    address disputeResolution = address(5);
 
     uint256 serviceId;
     uint256 agreementId;
@@ -108,21 +108,13 @@ abstract contract ServiceAgreementBaseTest is Test {
 
     /// @notice Helper function: simulate marking agreement as paid
     /// @dev In real scenario, PaymentManager.depositFunds would be called by ServiceAgreement
-    function markAsPaidHelper(uint256 _agreementId) internal {
+    function depositFundsHelper(uint256 _agreementId) internal {
         // Simulate depositing funds via PaymentManager
         // Client1 sends the exact amount to PaymentManager
         vm.deal(client1, 100 ether);
         vm.startPrank(client1);
         paymentManager.depositFunds{value:100}(_agreementId);
         vm.stopPrank();
-
-        // Now mark as paid through PaymentManager (ServiceAgreement calls markAsPaid)
-        // This happens automatically in depositFunds call above if implemented that way.
-        // Since we simulate, we can call serviceAgreement.markAsPaid directly if needed.
-        // But here we assume depositFunds in PaymentManager already calls markAsPaid.
-        // If not, we can do:
-        // vm.prank(address(paymentManager));
-        // serviceAgreement.markAsPaid(_agreementId);
     }
 
     /// @notice Helper function: complete an agreement by the provider
@@ -285,7 +277,7 @@ contract ServiceAgreementPaymentAndCompletionTest is ServiceAgreementBaseTest {
         super.setUp();
         agreementId = createAgreementHelper(client1, serviceId, provider1, 100);
         acceptAgreementHelper(provider1, agreementId);
-        markAsPaidHelper(agreementId);
+        depositFundsHelper(agreementId);
     }
 
     function test_MarkAsPaid_Success() public view {
@@ -333,7 +325,7 @@ contract ServiceAgreementFinalizationTest is ServiceAgreementBaseTest {
         super.setUp();
         agreementId = createAgreementHelper(client1, serviceId, provider1, 100);
         acceptAgreementHelper(provider1, agreementId);
-        markAsPaidHelper(agreementId);
+        depositFundsHelper(agreementId);
         completeAgreementHelper(provider1, agreementId);
     }
 
@@ -361,37 +353,11 @@ contract ServiceAgreementFinalizationTest is ServiceAgreementBaseTest {
     function test_AcceptCompletedAgreement_RevertIf_NotCompleted() public {
         uint256 newAg = createAgreementHelper(client1, serviceId, provider1, 100);
         acceptAgreementHelper(provider1, newAg);
-        markAsPaidHelper(newAg);
+        depositFundsHelper(newAg);
         // Not completed yet
         vm.prank(client1);
         vm.expectRevert("Must be Completed before accepted");
         serviceAgreement.acceptCompletedAgreement(newAg);
-    }
-
-    function test_DisputeCompletedAgreement_Success() public {
-        vm.prank(client1);
-        vm.expectEmit(true, false, false, true);
-        emit AgreementDisputed(agreementId);
-        serviceAgreement.disputeCompletedAgreement(agreementId);
-
-        (,,,,,IServiceAgreement.AgreementStatus status,) = serviceAgreement.agreements(agreementId);
-        assertEq(uint8(status), uint8(IServiceAgreement.AgreementStatus.Disputed), "Status should be Disputed");
-    }
-
-    function test_DisputeCompletedAgreement_RevertIf_NotClient() public {
-        vm.prank(provider1);
-        vm.expectRevert("Only client can dispute");
-        serviceAgreement.disputeCompletedAgreement(agreementId);
-    }
-
-    function test_DisputeCompletedAgreement_RevertIf_NotCompleted() public {
-        uint256 newAg = createAgreementHelper(client1, serviceId, provider1, 100);
-        acceptAgreementHelper(provider1, newAg);
-        markAsPaidHelper(newAg);
-        // Not completed yet
-        vm.prank(client1);
-        vm.expectRevert("Must be Completed before dispute");
-        serviceAgreement.disputeCompletedAgreement(newAg);
     }
 
     function test_FinalizeCompletionIfTimeout_Success() public {
@@ -415,7 +381,7 @@ contract ServiceAgreementFinalizationTest is ServiceAgreementBaseTest {
     function test_FinalizeCompletionIfTimeout_RevertIf_NotCompleted() public {
         uint256 newAg = createAgreementHelper(client1, serviceId, provider1, 100);
         acceptAgreementHelper(provider1, newAg);
-        markAsPaidHelper(newAg);
+        depositFundsHelper(newAg);
         // Not completed yet
         vm.prank(client1);
         vm.expectRevert("Must be Completed");
@@ -497,25 +463,75 @@ contract ServiceAgreementSetPaymentManagerTest is ServiceAgreementBaseTest {
     }
 }
 
+/// @title ServiceAgreementDisputeCompletedTest
+/// @notice Tests the disputeCompletedAgreement function of ServiceAgreement
+contract ServiceAgreementDisputeCompletedTest is ServiceAgreementBaseTest {
+
+    function setUp() public override {
+        super.setUp();
+        // Set the dispute resolution address in ServiceAgreement
+        // Assume ServiceAgreement has a function setDisputeResolutionAddress
+        vm.prank(owner);
+        serviceAgreement.setDisputeResolutionAddress(disputeResolution);
+
+        // Create and accept agreement
+        agreementId = createAgreementHelper(client1, serviceId, provider1, 100);
+        acceptAgreementHelper(provider1, agreementId);
+    }
+
+    /// @notice Tests revert if caller not DisputeResolution
+    function test_DisputeCompleted_RevertIf_NotDisputeResolution() public {
+        // Make agreement Completed
+        depositFundsHelper(agreementId); // Paid
+        completeAgreementHelper(provider1, agreementId); // Completed
+
+        vm.prank(nonParticipant);
+        vm.expectRevert("Only DisputeResolution can call"); // Assuming the modifier revert message
+        serviceAgreement.disputeCompletedAgreement(agreementId);
+    }
+
+    /// @notice Tests revert if agreement not Completed state
+    function test_DisputeCompleted_RevertIf_NotCompleted() public {
+        // Currently agreement is Accepted, not Completed yet
+        vm.prank(disputeResolution);
+        vm.expectRevert("Must be Completed before dispute");
+        serviceAgreement.disputeCompletedAgreement(agreementId);
+    }
+
+    /// @notice Tests successful dispute if called by DisputeResolution on a Completed agreement
+    function test_DisputeCompleted_Success() public {
+        // Move to Completed
+        depositFundsHelper(agreementId); // Paid
+        completeAgreementHelper(provider1, agreementId); // Completed now
+
+        vm.prank(disputeResolution);
+        vm.expectEmit(true, false, false, true);
+        emit AgreementDisputed(agreementId);
+        serviceAgreement.disputeCompletedAgreement(agreementId);
+
+        (,,,,,IServiceAgreement.AgreementStatus status,) = serviceAgreement.agreements(agreementId);
+        assertEq(uint8(status), uint8(IServiceAgreement.AgreementStatus.Disputed), "Should be Disputed after call");
+    }
+}
+
 /// @title ServiceAgreementResolveDisputeTest
 /// @notice Tests resolving a dispute in ServiceAgreement
 contract ServiceAgreementResolveDisputeTest is ServiceAgreementBaseTest {
-    address disputeResolutionContract = address(6);
 
     function setUp() public override {
         super.setUp();
         // Set the DisputeResolution address
         vm.prank(owner);
-        serviceAgreement.setDisputeResolutionAddress(disputeResolutionContract);
+        serviceAgreement.setDisputeResolutionAddress(disputeResolution);
 
         // Create an agreement and move it to Disputed state
         agreementId = createAgreementHelper(client1, serviceId, provider1, 100);
         acceptAgreementHelper(provider1, agreementId);
-        markAsPaidHelper(agreementId);
+        depositFundsHelper(agreementId);
         completeAgreementHelper(provider1, agreementId);
 
         // Client disputes the agreement
-        vm.prank(client1);
+        vm.prank(disputeResolution);
         serviceAgreement.disputeCompletedAgreement(agreementId);
 
         // Ensure it is Disputed now
@@ -526,7 +542,7 @@ contract ServiceAgreementResolveDisputeTest is ServiceAgreementBaseTest {
     /// @notice Test resolving a dispute successfully
     function test_ResolveDispute_Success() public {
         // Impersonate the DisputeResolution contract
-        vm.prank(disputeResolutionContract);
+        vm.prank(disputeResolution);
 
         // Expect events:
         // - FundsDistributedAfterDispute from PaymentManager (depends on ruling)
@@ -561,20 +577,20 @@ contract ServiceAgreementResolveDisputeTest is ServiceAgreementBaseTest {
         // We'll create a new agreement and move it to another status
         uint256 newAg = createAgreementHelper(client1, serviceId, provider1, 100);
         acceptAgreementHelper(provider1, newAg);
-        markAsPaidHelper(newAg);
+        depositFundsHelper(newAg);
         completeAgreementHelper(provider1, newAg);
 
         vm.prank(client1);
         serviceAgreement.acceptCompletedAgreement(newAg); // now CompletedAccepted, not Disputed
 
-        vm.prank(disputeResolutionContract);
+        vm.prank(disputeResolution);
         vm.expectRevert("Must be Disputed before resolving");
         serviceAgreement.resolveDispute(newAg, IPaymentManager.Ruling.ClientFavored);
     }
 
     /// @notice Test resolveDispute revert if agreement not found
     function test_ResolveDispute_RevertIf_AgreementNotFound() public {
-        vm.prank(disputeResolutionContract);
+        vm.prank(disputeResolution);
         vm.expectRevert("Agreement not found");
         serviceAgreement.resolveDispute(999, IPaymentManager.Ruling.ClientFavored);
     }
@@ -582,7 +598,7 @@ contract ServiceAgreementResolveDisputeTest is ServiceAgreementBaseTest {
     /// @notice Test resolveDispute revert if invalid ruling
     function test_ResolveDispute_RevertIf_InvalidRuling() public {
         // Ruling.None is invalid (depends on your implementation)
-        vm.prank(disputeResolutionContract);
+        vm.prank(disputeResolution);
         vm.expectRevert("Invalid ruling");
         serviceAgreement.resolveDispute(agreementId, IPaymentManager.Ruling.None);
     }
