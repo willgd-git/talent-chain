@@ -31,7 +31,7 @@ contract ServiceListing is IServiceListing {
 
     /// @notice Emitted when UserRegistry contract has been set
     /// @param userRegistryAddr The address of UserRegistry contract
-    event UserRegistryAddressSet(address userRegistryAddr);
+    event UserRegistrySet(address userRegistryAddr);
 
     /// @notice Emitted when a new service is created
     /// @param serviceId The ID of the created service
@@ -63,7 +63,7 @@ contract ServiceListing is IServiceListing {
         require(userRegistryAddr != address(0), "Invalid UserRegistry address");
         userRegistry = IUserRegistry(userRegistryAddr);
 
-        emit UserRegistryAddressSet(userRegistryAddr);
+        emit UserRegistrySet(userRegistryAddr);
     }
 
     /// @notice Modifier to ensure the caller is the contract owner

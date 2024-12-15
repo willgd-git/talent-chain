@@ -225,7 +225,7 @@ contract ServiceListingReactivateTest is ServiceListingBaseTest {
 /// @title ServiceListingSetUserRegistryTest
 /// @notice Tests the setUserRegistry function of ServiceListing
 contract ServiceListingSetUserRegistryTest is Test {
-    event UserRegistryAddressSet(address userRegistryAddr);
+    event UserRegistrySet(address userRegistryAddr);
     event ServiceCreated(uint256 indexed serviceId, address indexed provider, uint256 price);
 
     ServiceListing public serviceListing;
@@ -250,7 +250,7 @@ contract ServiceListingSetUserRegistryTest is Test {
 
         vm.startPrank(owner);
         vm.expectEmit(true, false, false, false);
-        emit UserRegistryAddressSet(address(newUserRegistry));
+        emit UserRegistrySet(address(newUserRegistry));
         serviceListing.setUserRegistry(address(newUserRegistry));
         vm.stopPrank();
 

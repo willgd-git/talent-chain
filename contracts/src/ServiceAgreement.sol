@@ -2,24 +2,13 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IServiceListing.sol";
+import "./interfaces/IPaymentManager.sol";
+import "./interfaces/IServiceAgreement.sol";
 
 /// @title Service Agreement Contract for TalentChain
-/// @author
 /// @notice Manages the lifecycle of service agreements, including negotiations, acceptance, payment, completion, and disputes.
-/// @dev Integrates with ServiceListing to validate services and providers. Uses status enum for all states including paid.
-contract ServiceAgreement {
-    /// @notice Enumeration of possible agreement states
-    /// @dev Proposed -> Accepted -> Paid -> Completed -> CompletedAccepted/Disputed
-    enum AgreementStatus {
-        Proposed,
-        Accepted,
-        Paid,
-        Completed,
-        CompletedAccepted,
-        Disputed,
-        Cancelled
-    }
-
+/// @dev Integrates with ServiceListing to validate services and providers, and PaymentManager to handle fund releases.
+contract ServiceAgreement is IServiceAgreement {
     /// @notice Data structure representing a service agreement
     struct Agreement {
         uint256 agreementId;
@@ -31,19 +20,33 @@ contract ServiceAgreement {
         uint256 completionTimestamp; // Timestamp set when provider completes
     }
 
-    /// @notice Reference to the service listing contract for validation
+    /// @notice Reference to the ServiceListing contract
     IServiceListing public serviceListing;
+
+    /// @notice Reference to the PaymentManager contract
+    IPaymentManager public paymentManager;
+
+    /// @notice Reference to the DisputeResolution contract
+    address public disputeResolution;
+
+    /// @notice Owner address for administrative functions
+    address public owner;
 
     /// @notice Mapping of agreementId to Agreement details
     mapping(uint256 => Agreement) public agreements;
 
-    /// @notice Tracks the next agreement ID
+    /// @notice Tracks the next agreement ID to assign
     uint256 public nextAgreementId;
 
     /// @notice Timeout after completion during which client can accept or dispute
     uint256 public completionAcceptanceTimeout = 7 days;
 
     /// @notice Emitted when a new agreement is created
+    /// @param agreementId The ID of the created agreement
+    /// @param serviceId The ID of the referenced service
+    /// @param client The address of the client
+    /// @param provider The address of the provider
+    /// @param amount The agreed amount for the service
     event AgreementCreated(
         uint256 indexed agreementId,
         uint256 indexed serviceId,
@@ -53,37 +56,103 @@ contract ServiceAgreement {
     );
 
     /// @notice Emitted when the provider accepts the agreement
+    /// @param agreementId The ID of the accepted agreement
     event AgreementAcceptedByProvider(uint256 indexed agreementId);
 
     /// @notice Emitted when the agreement is marked as Paid
+    /// @param agreementId The ID of the paid agreement
     event AgreementPaid(uint256 indexed agreementId);
 
-    /// @notice Emitted when the provider marks the agreement as completed
+    /// @notice Emitted when the provider completes the agreement
+    /// @param agreementId The ID of the completed agreement
     event AgreementCompleted(uint256 indexed agreementId);
 
     /// @notice Emitted when the client accepts the completed agreement
+    /// @param agreementId The ID of the agreement
     event AgreementCompletedAccepted(uint256 indexed agreementId);
 
     /// @notice Emitted when the client disputes the completed agreement
+    /// @param agreementId The ID of the agreement
     event AgreementDisputed(uint256 indexed agreementId);
 
     /// @notice Emitted when the agreement is cancelled
+    /// @param agreementId The ID of the cancelled agreement
     event AgreementCancelled(uint256 indexed agreementId);
 
+    /// @notice Emitted when the PaymentManager address is updated
+    /// @param newPaymentManager The address of the new PaymentManager contract
+    event PaymentManagerAddressSet(address indexed newPaymentManager);
+
+    /// @notice Emitted when the ServiceListing address is updated
+    /// @param newServiceListing The address of the new ServiceListing contract
+    event ServiceListingAddressSet(address indexed newServiceListing);
+
+    /// @notice Emitted when the agreement amount is updated
+    /// @param agreementId The ID of the agreement
+    /// @param oldAmount The previous amount
+    /// @param newAmount The updated amount
+    event AgreementAmountUpdated(uint256 indexed agreementId, uint256 oldAmount, uint256 newAmount);
+
+    /// @notice Emitted when the dispute is resolved and funds distribution occurs
+    event AgreementDisputeResolved(uint256 indexed agreementId, IPaymentManager.Ruling ruling);
+
+    /// @notice Modifier to restrict functions to the contract owner
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
+
+    /// @notice Modifier to ensure only the DisputeResolution contract can resolve disputes
+    modifier onlyDisputeResolution() {
+        require(msg.sender == disputeResolution, "Only DisputeResolution can call");
+        _;
+    }
+
+    /// @notice Constructor sets the owner
+    constructor() {
+        owner = msg.sender;
+    }
+
+    /// @notice Sets the ServiceListing contract address
+    /// @dev Can only be called by the contract owner
     /// @param serviceListingAddr The address of the ServiceListing contract
-    constructor(address serviceListingAddr) {
+    function setServiceListingAddress(address serviceListingAddr) external onlyOwner {
         require(serviceListingAddr != address(0), "Invalid ServiceListing address");
         serviceListing = IServiceListing(serviceListingAddr);
+        emit ServiceListingAddressSet(serviceListingAddr);
+    }
+
+    /// @notice Sets the PaymentManager contract address
+    /// @dev Can only be called by the contract owner
+    /// @param paymentManagerAddr The address of the PaymentManager contract
+    function setPaymentManagerAddress(address paymentManagerAddr) external onlyOwner {
+        require(paymentManagerAddr != address(0), "Invalid PaymentManager address");
+        paymentManager = IPaymentManager(paymentManagerAddr);
+        emit PaymentManagerAddressSet(paymentManagerAddr);
+    }
+
+    /// @notice Sets the DisputeResolution contract address
+    /// @dev Can only be called by the contract owner
+    /// @param disputeResolutionAddr The address of the DisputeResolution contract
+    function setDisputeResolutionAddress(address disputeResolutionAddr) external onlyOwner {
+        require(disputeResolutionAddr != address(0), "Invalid DisputeResolution address");
+        disputeResolution = disputeResolutionAddr;
     }
 
     /// @notice Creates a new service agreement in the Proposed state
+    /// @dev Requires ServiceListing to be set and validate service details
     /// @param serviceId The ID of the referenced service
     /// @param provider The provider of the service (must match the service listing)
     /// @param amount The agreed amount, must be > 0
     /// @return agreementId The ID of the newly created agreement
     function createAgreement(uint256 serviceId, address provider, uint256 amount) external returns (uint256 agreementId) {
         require(amount > 0, "Amount must be greater than 0");
-        (uint256 sId, address sProvider, , bool isActive) = serviceListing.services(serviceId);
+        (
+            uint256 sId,
+            address sProvider,
+            ,
+            bool isActive
+        ) = serviceListing.services(serviceId);
         require(sId == serviceId, "Invalid serviceId");
         require(sProvider == provider, "Provider mismatch");
         require(isActive, "Service not active");
@@ -113,8 +182,9 @@ contract ServiceAgreement {
         require(a.status == AgreementStatus.Proposed, "Can only edit in Proposed state");
         require(msg.sender == a.client || msg.sender == a.provider, "Not a participant");
 
+        uint256 oldAmount = a.amount;
         a.amount = newAmount;
-        // We could emit an event if desired, e.g. AgreementUpdated(agreementId, newAmount)
+        emit AgreementAmountUpdated(agreementId, oldAmount, newAmount);
     }
 
     /// @notice Provider accepts the proposed agreement, moving it to Accepted state
@@ -130,13 +200,14 @@ contract ServiceAgreement {
     }
 
     /// @notice Marks the agreement as Paid
-    /// @dev In a real scenario, PaymentManager would call this function after funds are deposited
+    /// @dev Called by PaymentManager
     /// @param agreementId The ID of the agreement
     function markAsPaid(uint256 agreementId) external {
+        require(msg.sender == address(paymentManager), "Only PaymentManager can mark as paid");
+
         Agreement storage a = agreements[agreementId];
         require(a.agreementId == agreementId, "Agreement not found");
         require(a.status == AgreementStatus.Accepted, "Must be Accepted before Paid");
-        // In real scenario, ensure caller is PaymentManager or check auth
 
         a.status = AgreementStatus.Paid;
         emit AgreementPaid(agreementId);
@@ -156,7 +227,7 @@ contract ServiceAgreement {
         emit AgreementCompleted(agreementId);
     }
 
-    /// @notice Client accepts the completed agreement
+    /// @notice Client accepts the completed agreement and triggers fund release
     /// @dev Must be Completed before accepted
     /// @param agreementId The ID of the agreement
     function acceptCompletedAgreement(uint256 agreementId) external {
@@ -166,6 +237,10 @@ contract ServiceAgreement {
         require(a.status == AgreementStatus.Completed, "Must be Completed before accepted");
 
         a.status = AgreementStatus.CompletedAccepted;
+
+        // Release funds via PaymentManager
+        paymentManager.releaseFunds(agreementId);
+
         emit AgreementCompletedAccepted(agreementId);
     }
 
@@ -188,7 +263,7 @@ contract ServiceAgreement {
     function cancelAgreement(uint256 agreementId) external {
         Agreement storage a = agreements[agreementId];
         require(a.agreementId == agreementId, "Agreement not found");
-        require(a.client == msg.sender || a.provider == msg.sender, "Not participant");
+        require(a.client == msg.sender || a.provider == msg.sender, "Not a participant");
         // States below Paid: Proposed(0), Accepted(1)
         require(a.status == AgreementStatus.Proposed || a.status == AgreementStatus.Accepted, "Cannot cancel now");
 
@@ -205,6 +280,29 @@ contract ServiceAgreement {
         require(block.timestamp > a.completionTimestamp + completionAcceptanceTimeout, "Timeout not reached");
 
         a.status = AgreementStatus.CompletedAccepted;
+        
+        // Release funds via PaymentManager
+        paymentManager.releaseFunds(agreementId);
+
         emit AgreementCompletedAccepted(agreementId);
+    }
+
+    /// @notice Resolve the dispute by distributing funds according to the ruling and updating the agreement status
+    /// @dev Must be Disputed before Resolved
+    ///      Can only be called by the DisputeResolution contract
+    /// @param agreementId The ID of the agreement
+    /// @param ruling The outcome of the dispute (ClientFavored, ProviderFavored, or Split)
+    function resolveDispute(uint256 agreementId, IPaymentManager.Ruling ruling) external onlyDisputeResolution {
+        Agreement storage a = agreements[agreementId];
+        require(a.agreementId == agreementId, "Agreement not found");
+        require(a.status == AgreementStatus.Disputed, "Must be Disputed before resolving");
+
+        // Update the status to DisputeResolved
+        a.status = AgreementStatus.DisputeResolved;
+
+        // Distribute funds via PaymentManager according to the ruling
+        paymentManager.distributeAfterDispute(agreementId, ruling);
+        
+        emit AgreementDisputeResolved(agreementId, ruling);
     }
 }
