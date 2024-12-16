@@ -5,8 +5,7 @@ import "./interfaces/IUserRegistry.sol";
 import "./interfaces/IServiceListing.sol";
 
 /// @title Service Listing Contract for TalentChain
-/// @author
-/// @notice Allows service providers to list services with basic info (price, active status).
+/// @notice Allows service providers to list services with metadata stored on IPFS.
 /// @dev Integrates with UserRegistry to ensure that only registered providers can create or modify services.
 contract ServiceListing is IServiceListing {
     /// @notice Structure holding service info
@@ -14,6 +13,7 @@ contract ServiceListing is IServiceListing {
         uint256 serviceId;
         address provider;
         uint256 price;
+        string ipfsHash;
         bool isActive;
     }
 
@@ -37,12 +37,14 @@ contract ServiceListing is IServiceListing {
     /// @param serviceId The ID of the created service
     /// @param provider The provider who created the service
     /// @param price The price of the service
-    event ServiceCreated(uint256 indexed serviceId, address indexed provider, uint256 price);
+    /// @param ipfsHash The IPFS hash of the service metadata
+    event ServiceCreated(uint256 indexed serviceId, address indexed provider, uint256 price, string ipfsHash);
 
-    /// @notice Emitted when a service is updated
+    /// @notice Emitted when a service's price or metadata is updated
     /// @param serviceId The ID of the service updated
     /// @param newPrice The new price of the service
-    event ServiceUpdated(uint256 indexed serviceId, uint256 newPrice);
+    /// @param newIpfsHash The new IPFS hash of the service metadata
+    event ServiceUpdated(uint256 indexed serviceId, uint256 newPrice, string newIpfsHash);
 
     /// @notice Emitted when a service is deactivated
     /// @param serviceId The ID of the service deactivated
@@ -88,30 +90,39 @@ contract ServiceListing is IServiceListing {
 
     /// @notice Creates a new service, must be a registered provider and price > 0
     /// @param price The price of the service
+    /// @param ipfsHash The IPFS hash of the service metadata
     /// @return serviceId The ID of the newly created service
-    function createService(uint256 price) external registeredProvider returns (uint256 serviceId) {
+    function createService(uint256 price, string memory ipfsHash) external registeredProvider returns (uint256 serviceId) {
         require(price > 0, "Price must be greater than zero");
+        require(bytes(ipfsHash).length > 0, "IPFS hash cannot be empty");
+
         serviceId = ++nextServiceId;
         services[serviceId] = Service({
             serviceId: serviceId,
             provider: msg.sender,
             price: price,
+            ipfsHash: ipfsHash,
             isActive: true
         });
 
-        emit ServiceCreated(serviceId, msg.sender, price);
+        emit ServiceCreated(serviceId, msg.sender, price, ipfsHash);
     }
 
-    /// @notice Updates the price of an existing active service
+    /// @notice Updates the price and metadata of an existing active service
     /// @param serviceId The ID of the service to update
     /// @param newPrice The new price for the service, must be > 0
-    function updateService(uint256 serviceId, uint256 newPrice) external onlyProvider(serviceId) {
+    /// @param newIpfsHash The new IPFS hash of the service metadata
+    function updateService(uint256 serviceId, uint256 newPrice, string memory newIpfsHash) external onlyProvider(serviceId) {
         require(newPrice > 0, "Price must be greater than zero");
+        require(bytes(newIpfsHash).length > 0, "IPFS hash cannot be empty");
+
         Service storage s = services[serviceId];
-        require(s.isActive, "Service not active");
+        require(s.serviceId == serviceId, "Service does not exist");
 
         s.price = newPrice;
-        emit ServiceUpdated(serviceId, newPrice);
+        s.ipfsHash = newIpfsHash;
+
+        emit ServiceUpdated(serviceId, newPrice, newIpfsHash);
     }
 
     /// @notice Deactivates a service, only provider can deactivate
@@ -128,6 +139,7 @@ contract ServiceListing is IServiceListing {
     /// @param serviceId The ID of the service to reactivate
     function reactivateService(uint256 serviceId) external onlyProvider(serviceId) {
         Service storage s = services[serviceId];
+        require(s.serviceId == serviceId, "Service does not exist");
         require(!s.isActive, "Service already active");
 
         s.isActive = true;

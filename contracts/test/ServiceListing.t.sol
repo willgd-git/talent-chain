@@ -10,8 +10,8 @@ import {IUserRegistry} from "../src/interfaces/IUserRegistry.sol";
 /// @notice Base test contract for ServiceListing, sets up UserRegistry and ServiceListing
 /// @dev Provides helper functions for creating services and managing users
 abstract contract ServiceListingBaseTest is Test {
-    event ServiceCreated(uint256 indexed serviceId, address indexed provider, uint256 price);
-    event ServiceUpdated(uint256 indexed serviceId, uint256 newPrice);
+    event ServiceCreated(uint256 indexed serviceId, address indexed provider, uint256 price, string ipfsHash);
+    event ServiceUpdated(uint256 indexed serviceId, uint256 newPrice, string newIpfsHash);
     event ServiceDeactivated(uint256 indexed serviceId);
     event ServiceReactivated(uint256 indexed serviceId);
 
@@ -22,6 +22,8 @@ abstract contract ServiceListingBaseTest is Test {
     address provider1 = address(2);
     address provider2 = address(3);
     address nonProvider = address(4);
+
+    string public constant testIpfsHash = "ipfs://test-hash";
 
     /// @notice Setup runs before each test method
     function setUp() public virtual {
@@ -34,16 +36,17 @@ abstract contract ServiceListingBaseTest is Test {
 
         // Register provider1
         vm.prank(provider1);
-        userRegistry.registerUser();
+        userRegistry.registerUser("userProfileHash");
     }
 
     /// @notice Helper function: create a service from a registered provider
     /// @param provider The provider who creates the service
     /// @param price The price of the service
+    /// @param ipfsHash The IPFS hash of the service metadata
     /// @return serviceId The ID of the created service
-    function createService(address provider, uint256 price) internal returns (uint256 serviceId) {
+    function createService(address provider, uint256 price, string memory ipfsHash) internal returns (uint256 serviceId) {
         vm.prank(provider);
-        serviceId = serviceListing.createService(price);
+        serviceId = serviceListing.createService(price, ipfsHash);
     }
 }
 
@@ -55,13 +58,14 @@ contract ServiceListingCreateTest is ServiceListingBaseTest {
     function test_CreateService_Success() public {
         vm.startPrank(provider1);
         vm.expectEmit(true, true, false, true);
-        emit ServiceCreated(1, provider1, 100);
-        uint256 serviceId = serviceListing.createService(100);
+        emit ServiceCreated(1, provider1, 100, testIpfsHash);
+        uint256 serviceId = serviceListing.createService(100, testIpfsHash);
         vm.stopPrank();
 
-        ( , address prov, uint256 price, bool isActive) = serviceListing.services(serviceId);
+        ( , address prov, uint256 price, string memory ipfsHash, bool isActive) = serviceListing.services(serviceId);
         assertEq(prov, provider1, "Provider should match");
         assertEq(price, 100, "Price should match");
+        assertEq(ipfsHash, testIpfsHash, "IPFS hash should match");
         assertTrue(isActive, "Service should be active");
     }
 
@@ -70,14 +74,21 @@ contract ServiceListingCreateTest is ServiceListingBaseTest {
         // provider2 not registered yet
         vm.prank(provider2);
         vm.expectRevert("Provider not registered");
-        serviceListing.createService(100);
+        serviceListing.createService(100, testIpfsHash);
     }
 
     /// @notice Test service creation revert if price is zero
     function test_CreateService_RevertIf_PriceZero() public {
         vm.prank(provider1);
         vm.expectRevert("Price must be greater than zero");
-        serviceListing.createService(0);
+        serviceListing.createService(0, testIpfsHash);
+    }
+
+    /// @notice Test service creation revert if IPFS hash is empty
+    function test_CreateService_RevertIf_EmptyIpfsHash() public {
+        vm.prank(provider1);
+        vm.expectRevert("IPFS hash cannot be empty");
+        serviceListing.createService(100, "");
     }
 }
 
@@ -89,46 +100,39 @@ contract ServiceListingUpdateTest is ServiceListingBaseTest {
     /// @notice Setup runs before each test method
     function setUp() public override {
         super.setUp();
-        serviceId = createService(provider1, 100);
+        serviceId = createService(provider1, 100, testIpfsHash);
     }
 
     /// @notice Test successful service update
     function test_UpdateService_Success() public {
+        string memory newIpfsHash = "ipfs://updated-hash";
+
         vm.startPrank(provider1);
         vm.expectEmit(true, false, false, true);
-        emit ServiceUpdated(serviceId, 200);
-        serviceListing.updateService(serviceId, 200);
+        emit ServiceUpdated(serviceId, 200, newIpfsHash);
+        serviceListing.updateService(serviceId, 200, newIpfsHash);
         vm.stopPrank();
 
-        (, , uint256 newPrice,) = serviceListing.services(serviceId);
+        (, , uint256 newPrice, string memory newHash, ) = serviceListing.services(serviceId);
         assertEq(newPrice, 200, "Price should be updated");
+        assertEq(newHash, newIpfsHash, "IPFS hash should be updated");
     }
 
     /// @notice Test service update revert if not called by provider
     function test_UpdateService_RevertIf_NotProvider() public {
+        string memory newIpfsHash = "ipfs://updated-hash";
+
         vm.startPrank(nonProvider);
         vm.expectRevert("Only provider can modify");
-        serviceListing.updateService(serviceId, 200);
+        serviceListing.updateService(serviceId, 200, newIpfsHash);
         vm.stopPrank();
     }
 
-    /// @notice Test service update revert if service is inactive
-    function test_UpdateService_RevertIf_Inactive() public {
-        // Deactivate first
-        vm.prank(provider1);
-        serviceListing.deactivateService(serviceId);
-
+    /// @notice Test service update revert if IPFS hash is empty
+    function test_UpdateService_RevertIf_EmptyIpfsHash() public {
         vm.startPrank(provider1);
-        vm.expectRevert("Service not active");
-        serviceListing.updateService(serviceId, 200);
-        vm.stopPrank();
-    }
-
-    /// @notice Test service update revert if new price is zero
-    function test_UpdateService_RevertIf_PriceZero() public {
-        vm.startPrank(provider1);
-        vm.expectRevert("Price must be greater than zero");
-        serviceListing.updateService(serviceId, 0);
+        vm.expectRevert("IPFS hash cannot be empty");
+        serviceListing.updateService(serviceId, 200, "");
         vm.stopPrank();
     }
 }
@@ -141,7 +145,7 @@ contract ServiceListingDeactivateTest is ServiceListingBaseTest {
     /// @notice Setup runs before each test method
     function setUp() public override {
         super.setUp();
-        serviceId = createService(provider1, 100);
+        serviceId = createService(provider1, 100, testIpfsHash);
     }
 
     /// @notice Test successful service deactivation
@@ -152,7 +156,7 @@ contract ServiceListingDeactivateTest is ServiceListingBaseTest {
         serviceListing.deactivateService(serviceId);
         vm.stopPrank();
 
-        ( , , , bool isActive) = serviceListing.services(serviceId);
+        ( , , , , bool isActive) = serviceListing.services(serviceId);
         assertFalse(isActive, "Service should be inactive");
     }
 
@@ -184,7 +188,7 @@ contract ServiceListingReactivateTest is ServiceListingBaseTest {
     /// @notice Setup runs before each test method
     function setUp() public override {
         super.setUp();
-        serviceId = createService(provider1, 100);
+        serviceId = createService(provider1, 100, testIpfsHash);
         // Deactivate the service first
         vm.prank(provider1);
         serviceListing.deactivateService(serviceId);
@@ -198,7 +202,7 @@ contract ServiceListingReactivateTest is ServiceListingBaseTest {
         serviceListing.reactivateService(serviceId);
         vm.stopPrank();
 
-        ( , , , bool isActive) = serviceListing.services(serviceId);
+        ( , , , , bool isActive) = serviceListing.services(serviceId);
         assertTrue(isActive, "Service should be active again");
     }
 
@@ -219,108 +223,5 @@ contract ServiceListingReactivateTest is ServiceListingBaseTest {
         vm.expectRevert("Service already active");
         serviceListing.reactivateService(serviceId);
         vm.stopPrank();
-    }
-}
-
-/// @title ServiceListingSetUserRegistryTest
-/// @notice Tests the setUserRegistry function of ServiceListing
-contract ServiceListingSetUserRegistryTest is Test {
-    event UserRegistrySet(address userRegistryAddr);
-    event ServiceCreated(uint256 indexed serviceId, address indexed provider, uint256 price);
-
-    ServiceListing public serviceListing;
-    UserRegistry public newUserRegistry;
-
-    address owner = address(1);
-    address newOwner = address(5);
-    address provider1 = address(2);
-    address provider2 = address(3);
-    address nonOwner = address(4);
-
-    /// @notice Setup runs before each test method
-    function setUp() public {
-        vm.startPrank(owner);
-        serviceListing = new ServiceListing();
-        vm.stopPrank();
-    }
-
-    /// @notice Test successful setting of UserRegistry by owner
-    function test_SetUserRegistry_Success() public {
-        newUserRegistry = new UserRegistry();
-
-        vm.startPrank(owner);
-        vm.expectEmit(true, false, false, false);
-        emit UserRegistrySet(address(newUserRegistry));
-        serviceListing.setUserRegistry(address(newUserRegistry));
-        vm.stopPrank();
-
-        assertEq(address(serviceListing.userRegistry()), address(newUserRegistry), "UserRegistry should be set correctly");
-    }
-
-    /// @notice Test setting UserRegistry revert if called by non-owner
-    function test_SetUserRegistry_RevertIf_NotOwner() public {
-        newUserRegistry = new UserRegistry();
-
-        vm.startPrank(nonOwner);
-        vm.expectRevert("Only owner");
-        serviceListing.setUserRegistry(address(newUserRegistry));
-        vm.stopPrank();
-
-        assertEq(address(serviceListing.userRegistry()), address(0), "UserRegistry should not be set");
-    }
-
-    /// @notice Test setting UserRegistry revert if address is zero
-    function test_SetUserRegistry_RevertIf_InvalidAddress() public {
-        vm.startPrank(owner);
-        vm.expectRevert("Invalid UserRegistry address");
-        serviceListing.setUserRegistry(address(0));
-        vm.stopPrank();
-
-        assertEq(address(serviceListing.userRegistry()), address(0), "UserRegistry should not be set");
-    }
-
-    /// @notice Test owner can update UserRegistry to a new address
-    function test_SetUserRegistry_UpdateSuccessfully() public {
-        newUserRegistry = new UserRegistry();
-
-        vm.startPrank(owner);
-        serviceListing.setUserRegistry(address(newUserRegistry));
-        vm.stopPrank();
-
-        assertEq(address(serviceListing.userRegistry()), address(newUserRegistry), "UserRegistry should be set correctly");
-
-        // Deploy another UserRegistry
-        UserRegistry anotherUserRegistry = new UserRegistry();
-
-        vm.startPrank(owner);
-        serviceListing.setUserRegistry(address(anotherUserRegistry));
-        vm.stopPrank();
-
-        assertEq(address(serviceListing.userRegistry()), address(anotherUserRegistry), "UserRegistry should be updated correctly");
-    }
-
-    /// @notice Test that after setting UserRegistry, registeredProvider modifier works correctly
-    function test_SetUserRegistry_AfterSetting_UserProviderModifier() public {
-        newUserRegistry = new UserRegistry();
-
-        // Set new UserRegistry
-        vm.startPrank(owner);
-        serviceListing.setUserRegistry(address(newUserRegistry));
-        vm.stopPrank();
-
-        // Register provider1 in new UserRegistry
-        vm.prank(provider1);
-        newUserRegistry.registerUser();
-
-        // Attempt to create service with provider1
-        vm.prank(provider1);
-        vm.expectEmit(true, true, false, true);
-        emit ServiceCreated(1, provider1, 100);
-        uint256 serviceId = serviceListing.createService(100);
-
-        ( , address prov, uint256 price, bool isActive) = serviceListing.services(serviceId);
-        assertEq(prov, provider1, "Provider should match");
-        assertEq(price, 100, "Price should match");
-        assertTrue(isActive, "Service should be active");
     }
 }

@@ -42,7 +42,7 @@ abstract contract PaymentManagerBaseTest is Test {
 
         // Register provider
         vm.prank(provider1);
-        userRegistry.registerUser();
+        userRegistry.registerUser("userProfileHash");
 
         paymentManager = new PaymentManager();
         serviceAgreement = new ServiceAgreement();
@@ -52,7 +52,7 @@ abstract contract PaymentManagerBaseTest is Test {
         paymentManager.setServiceAgreementAddress(address(serviceAgreement));
 
         vm.prank(provider1);
-        serviceId = serviceListing.createService(100); // 100 wei
+        serviceId = serviceListing.createService(100, "ipfsHashes"); // 100 wei
 
         // Deploy DisputeResolution
         disputeResolution = new DisputeResolution();

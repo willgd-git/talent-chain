@@ -151,6 +151,7 @@ contract ServiceAgreement is IServiceAgreement {
             uint256 sId,
             address sProvider,
             ,
+            ,
             bool isActive
         ) = serviceListing.services(serviceId);
         require(sId == serviceId, "Invalid serviceId");

@@ -42,7 +42,7 @@ abstract contract ReputationManagerBaseTest is Test {
 
         // Register provider
         vm.prank(provider1);
-        userRegistry.registerUser();
+        userRegistry.registerUser("userProfileHash");
 
         // Deploy PaymentManager and ServiceAgreement
         paymentManager = new PaymentManager();
@@ -53,7 +53,7 @@ abstract contract ReputationManagerBaseTest is Test {
 
         // Create a service
         vm.prank(provider1);
-        serviceId = serviceListing.createService(100); // 100 wei
+        serviceId = serviceListing.createService(100, "ipfsHashes"); // 100 wei
 
         // Deploy DisputeResolution
         disputeResolution = new DisputeResolution();

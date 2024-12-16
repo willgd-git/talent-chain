@@ -8,7 +8,7 @@ dataSources:
     name: UserRegistry
     network: sepolia
     source:
-      address: "0xDE7CaA7393E596880f9c6eb85A36f773254edc4A"
+      address: "0x64f191Cdd8b0C9a5F87e6a3e7147DaCDE7F08344"
       abi: UserRegistry
       startBlock: 1
     mapping:
@@ -16,21 +16,24 @@ dataSources:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
+        - UserProfileUpdated
         - UserRegistered
       abis:
         - name: UserRegistry
           file: ./abis/UserRegistry.json
       eventHandlers:
-        - event: UserRegistered(indexed address)
+        - event: UserProfileUpdated(indexed address,string,string)
+          handler: handleUserProfileUpdated
+        - event: UserRegistered(indexed address,string)
           handler: handleUserRegistered
       file: ./src/user-registry.ts
   - kind: ethereum
     name: ServiceListing
     network: sepolia
     source:
-      address: "0xF9D993f27cd2AC55A9D3Aa59407623d2688Fd0B6"
+      address: "0x8661a9c113577ca0e961642649C6C04BC1bCEd34"
       abi: ServiceListing
-      startBlock: 7283898
+      startBlock: 7290435
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -45,13 +48,13 @@ dataSources:
         - name: ServiceListing
           file: ./abis/ServiceListing.json
       eventHandlers:
-        - event: ServiceCreated(indexed uint256,indexed address,uint256)
+        - event: ServiceCreated(indexed uint256,indexed address,uint256,string)
           handler: handleServiceCreated
         - event: ServiceDeactivated(indexed uint256)
           handler: handleServiceDeactivated
         - event: ServiceReactivated(indexed uint256)
           handler: handleServiceReactivated
-        - event: ServiceUpdated(indexed uint256,uint256)
+        - event: ServiceUpdated(indexed uint256,uint256,string)
           handler: handleServiceUpdated
         - event: UserRegistrySet(address)
           handler: handleUserRegistrySet

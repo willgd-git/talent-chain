@@ -70,7 +70,7 @@ abstract contract ServiceAgreementBaseTest is Test {
 
         // Register provider
         vm.prank(provider1);
-        userRegistry.registerUser();
+        userRegistry.registerUser("userProfileHash");
 
         // Deploy PaymentManager (no ServiceAgreement set yet)
         vm.startPrank(owner);
@@ -91,7 +91,7 @@ abstract contract ServiceAgreementBaseTest is Test {
 
         // Create a service in ServiceListing
         vm.prank(provider1);
-        serviceId = serviceListing.createService(100);
+        serviceId = serviceListing.createService(100, "ipfsHashes");
     }
 
     /// @notice Helper function: create an agreement
@@ -174,9 +174,9 @@ contract ServiceAgreementCreateTest is ServiceAgreementBaseTest {
         // Create another service with a different provider
         address provider2 = address(6);
         vm.prank(provider2);
-        userRegistry.registerUser();
+        userRegistry.registerUser("userProfileHash");
         vm.prank(provider2);
-        uint256 newServiceId = serviceListing.createService(200);
+        uint256 newServiceId = serviceListing.createService(200, "ipfsHashes");
 
         vm.prank(client1);
         vm.expectRevert("Provider mismatch");

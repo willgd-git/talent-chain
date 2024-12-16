@@ -11,7 +11,8 @@ import {
 export function createServiceCreatedEvent(
   serviceId: BigInt,
   provider: Address,
-  price: BigInt
+  price: BigInt,
+  ipfsHash: string
 ): ServiceCreated {
   let serviceCreatedEvent = changetype<ServiceCreated>(newMockEvent())
 
@@ -28,6 +29,9 @@ export function createServiceCreatedEvent(
   )
   serviceCreatedEvent.parameters.push(
     new ethereum.EventParam("price", ethereum.Value.fromUnsignedBigInt(price))
+  )
+  serviceCreatedEvent.parameters.push(
+    new ethereum.EventParam("ipfsHash", ethereum.Value.fromString(ipfsHash))
   )
 
   return serviceCreatedEvent
@@ -69,7 +73,8 @@ export function createServiceReactivatedEvent(
 
 export function createServiceUpdatedEvent(
   serviceId: BigInt,
-  newPrice: BigInt
+  newPrice: BigInt,
+  newIpfsHash: string
 ): ServiceUpdated {
   let serviceUpdatedEvent = changetype<ServiceUpdated>(newMockEvent())
 
@@ -85,6 +90,12 @@ export function createServiceUpdatedEvent(
     new ethereum.EventParam(
       "newPrice",
       ethereum.Value.fromUnsignedBigInt(newPrice)
+    )
+  )
+  serviceUpdatedEvent.parameters.push(
+    new ethereum.EventParam(
+      "newIpfsHash",
+      ethereum.Value.fromString(newIpfsHash)
     )
   )
 

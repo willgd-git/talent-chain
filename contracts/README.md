@@ -48,7 +48,7 @@ $ anvil
 ### Deploy
 
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+forge script script/DeployContracts.s.sol --broadcast --rpc-url <your_rpc_url> --gas-price 10000000000
 ```
 
 ### Cast

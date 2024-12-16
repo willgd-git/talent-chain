@@ -22,10 +22,12 @@ describe("Describe entity assertions", () => {
       "0x0000000000000000000000000000000000000001"
     )
     let price = BigInt.fromI32(234)
+    let ipfsHash = "Example string value"
     let newServiceCreatedEvent = createServiceCreatedEvent(
       serviceId,
       provider,
-      price
+      price,
+      ipfsHash
     )
     handleServiceCreated(newServiceCreatedEvent)
   })
@@ -58,6 +60,12 @@ describe("Describe entity assertions", () => {
       "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
       "price",
       "234"
+    )
+    assert.fieldEquals(
+      "ServiceCreated",
+      "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
+      "ipfsHash",
+      "Example string value"
     )
 
     // More assert options:

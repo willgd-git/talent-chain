@@ -1,6 +1,17 @@
+type UserProfileUpdated @entity(immutable: true) {
+  id: Bytes!
+  userAddress: Bytes! # address
+  oldIpfsHash: String! # string
+  newIpfsHash: String! # string
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
 type UserRegistered @entity(immutable: true) {
   id: Bytes!
   userAddress: Bytes! # address
+  ipfsHash: String! # string
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -10,6 +21,7 @@ type ServiceCreated @entity(immutable: true) {
   serviceId: BigInt! # uint256
   provider: Bytes! # address
   price: BigInt! # uint256
+  ipfsHash: String! # string
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -35,6 +47,7 @@ type ServiceUpdated @entity(immutable: true) {
   id: Bytes!
   serviceId: BigInt! # uint256
   newPrice: BigInt! # uint256
+  newIpfsHash: String! # string
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!

@@ -20,6 +20,7 @@ export function handleServiceCreated(event: ServiceCreatedEvent): void {
   entity.serviceId = event.params.serviceId
   entity.provider = event.params.provider
   entity.price = event.params.price
+  entity.ipfsHash = event.params.ipfsHash
 
   entity.blockNumber = event.block.number
   entity.blockTimestamp = event.block.timestamp
@@ -60,6 +61,7 @@ export function handleServiceUpdated(event: ServiceUpdatedEvent): void {
   )
   entity.serviceId = event.params.serviceId
   entity.newPrice = event.params.newPrice
+  entity.newIpfsHash = event.params.newIpfsHash
 
   entity.blockNumber = event.block.number
   entity.blockTimestamp = event.block.timestamp

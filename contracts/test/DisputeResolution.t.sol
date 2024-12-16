@@ -37,7 +37,7 @@ abstract contract DisputeResolutionBaseTest is Test {
         serviceListing.setUserRegistry(address(userRegistry));
 
         vm.prank(provider1);
-        userRegistry.registerUser();
+        userRegistry.registerUser("userProfileHash");
 
         paymentManager = new PaymentManager();
         serviceAgreement = new ServiceAgreement();
@@ -46,7 +46,7 @@ abstract contract DisputeResolutionBaseTest is Test {
         paymentManager.setServiceAgreementAddress(address(serviceAgreement));
 
         vm.prank(provider1);
-        serviceId = serviceListing.createService(100); // 100 wei
+        serviceId = serviceListing.createService(100, "ipfsHashes"); // 100 wei
 
         disputeResolution = new DisputeResolution();
     }

@@ -1,11 +1,11 @@
 {
   "sepolia": {
     "UserRegistry": {
-      "address": "0xDE7CaA7393E596880f9c6eb85A36f773254edc4A",
+      "address": "0x64f191Cdd8b0C9a5F87e6a3e7147DaCDE7F08344",
       "startBlock": 1
     },
     "ServiceListing": {
-      "address": "0xF9D993f27cd2AC55A9D3Aa59407623d2688Fd0B6"
+      "address": "0x8661a9c113577ca0e961642649C6C04BC1bCEd34"
     },
     "PaymentManager": {
       "address": "0xaF6F9d320f61Bc30A1f65EF67d7376EA8CC2a4C2"
